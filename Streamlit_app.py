@@ -174,7 +174,7 @@ def plot_data(df_unique, Use_ticker):
 
     fig.update_layout(height=900, width=1100)
 
-    #fig.show()
+    fig.show()
     st.plotly_chart(fig)
 
 

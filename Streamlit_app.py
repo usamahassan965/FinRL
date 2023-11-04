@@ -87,7 +87,6 @@ if load_data and all([TRAIN_START, TRAIN_END, TRADE_START, TRADE_END]):
 
 # Create subplots with 2 rows; top for candlestick price, and bottom for bar volume
 Use_ticker = st.selectbox("Select Ticker", Ticker_list)
-#Plot_data = st.button("PLOT DATA")
 
 
 @st.cache_data
@@ -102,9 +101,7 @@ def choose_ticker(load_data, Use_ticker, df_process):
 df_unique = None
 if load_data is True and Use_ticker is not None:
     df_unique = choose_ticker(load_data, Use_ticker, df_process)
-
-
-if load_data is True and Use_ticker is not None:
+    
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=(Use_ticker, 'Volume'),
                         vertical_spacing=0.1,
                         row_width=[0.2, 0.7])

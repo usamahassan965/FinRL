@@ -174,8 +174,8 @@ def plot_data(df_unique, Use_ticker):
 
     fig.update_layout(height=900, width=1100)
 
-    fig.show()
-    st.plotly_chart(fig)
+    #fig.show()
+    st.plotly_chart(fig,use_container_width=True)
 
 
 if df_unique is not None and Plot_data:

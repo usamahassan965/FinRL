@@ -104,7 +104,7 @@ if load_data is True and Use_ticker is not None:
     df_unique = choose_ticker(load_data, Use_ticker, df_process)
 
 
-def plot_data(df_unique, Use_ticker):
+if st.button('PLOT DATA') and load_data is True and Use_ticker is not None:
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=(Use_ticker, 'Volume'),
                         vertical_spacing=0.1,
                         row_width=[0.2, 0.7])
@@ -174,11 +174,6 @@ def plot_data(df_unique, Use_ticker):
     fig.update_layout(height=900, width=1100)
 
     #fig.show()
-    return fig
-
-
-if df_unique is not None and Plot_data:
-    fig = plot_data(df_unique, Use_ticker)
     st.plotly_chart(fig,use_container_width=True)
 else:
     pass

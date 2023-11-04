@@ -29,10 +29,10 @@ warnings.filterwarnings('ignore')
 
 Ticker_list = list(config_tickers.DOW_30_TICKER)
 
-TRAIN_START = str(st.sidebar.date_input("TRAIN_START", datetime.date(2005,01,01)))
-TRAIN_END = str(st.sidebar.date_input("TRAIN_END", datetime.date(2020,12,31)))
-TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,01,01)))
-TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,01,01)))
+TRAIN_START = str(st.sidebar.date_input("TRAIN_START", datetime.date(2005,1,1)))
+TRAIN_END = str(st.sidebar.date_input("TRAIN_END", datetime.date(2020,1,1)))
+TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,1,1)))
+TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,1,1)))
 load_data = str(st.checkbox("LOAD DATA"))
 
 

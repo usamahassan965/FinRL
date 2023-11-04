@@ -29,10 +29,10 @@ else:
 
 Ticker_list = list(config_tickers.DOW_30_TICKER)
 
-TRAIN_START = st.text_input("TRAIN_START", "2005-01-01")
-TRAIN_END = st.text_input("TRAIN_END", "2020-12-31")
-TRADE_START = st.text_input("TRADE_START", "2021-01-01")
-TRADE_END = st.text_input("TRADE_END", End_date)
+TRAIN_START = st.sidebar.date_input("TRAIN_START", "2005-01-01")
+TRAIN_END = st.sidebar.date_input("TRAIN_END", "2020-12-31")
+TRADE_START = st.sidebar.date_input("TRADE_START", "2021-01-01")
+TRADE_END = st.sidebar.date_input("TRADE_END", End_date)
 load_data = st.checkbox("LOAD DATA")
 
 
@@ -86,7 +86,7 @@ if load_data and all([TRAIN_START, TRAIN_END, TRADE_START, TRADE_END]):
 #################################################################################################################################################
 
 # Create subplots with 2 rows; top for candlestick price, and bottom for bar volume
-Use_ticker = st.selectbox("Select Ticker", Ticker_list)
+Use_ticker = st.sidebar.selectbox("Select Ticker", Ticker_list)
 Plot_data = st.button("PLOT DATA")
 
 
@@ -108,7 +108,7 @@ if load_data is True and Use_ticker is not None:
 def plot_data(df_unique, Use_ticker):
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=(Use_ticker, 'Volume'),
                         vertical_spacing=0.1,
-                        row_width=[0.2, 0.7])
+                        row_width=[0.1, 0.8])
 
     # ----------------
     # Candlestick Plot
@@ -116,7 +116,7 @@ def plot_data(df_unique, Use_ticker):
                                  open=df_unique['open'],
                                  high=df_unique['high'],
                                  low=df_unique['low'],
-                                 close=df_unique['close'], showlegend=False,
+                                 close=df_unique['close'], showlegend=True,
                                  name='candlestick'),
                   row=1, col=1)
 
@@ -172,7 +172,7 @@ def plot_data(df_unique, Use_ticker):
     # Remove range slider; (short time frame)
     fig.update(layout_xaxis_rangeslider_visible=False)
 
-    fig.update_layout(height=900, width=1100)
+    #fig.update_layout(height=900, width=1200)
 
     #fig.show()
     return fig
@@ -180,8 +180,7 @@ def plot_data(df_unique, Use_ticker):
 
 if df_unique is not None and Plot_data:
     fig = plot_data(df_unique, Use_ticker)
-    fig.show()
-    #st.plotly_chart(fig)
+    st.plotly_chart(fig,theme=None,use_container_width=True)
 else:
     pass
 
@@ -229,13 +228,13 @@ if df_unique is not None:
     agent = DRLAgent(env = env_train)
 
 # Add a dropdown for selecting the action (Train agents, Fine Tune agents)
-action = st.selectbox("Select Action", ["Train Agent", "FineTune Agent"])
+action = st.sidebar.selectbox("Select Action", ["Train Agent", "FineTune Agent"])
 selected_agent = None
 
 
 if action == "Train Agent" or 'FineTune Agent':
     # Add a dropdown for selecting the agent
-    selected_agent = st.selectbox("Select Agent", ["A2C", "DDPG", "PPO", "TD3", "SAC"])
+    selected_agent = st.sidebar.selectbox("Select Agent", ["A2C", "DDPG", "PPO", "TD3", "SAC"])
 
 
 @st.cache_resource

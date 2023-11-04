@@ -1,5 +1,5 @@
 streamlit==1.28.1
 optuna==3.3.0
 plotly==5.16.1
-finrl==0.3.6
+finrl==0.3.5
 Box2D==2.3.2

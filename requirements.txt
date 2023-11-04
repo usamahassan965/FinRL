@@ -1,5 +1,5 @@
-streamlit
+streamlit==1.28.1
 optuna==3.3.0
 plotly==5.16.1
-finrl @ git+https://github.com/AI4Finance-Foundation/FinRL.git@b781b80727bb8848e7addcfd6fa61e1ff6b06fa3
+finrl==0.3.6
 Box2D==2.3.2

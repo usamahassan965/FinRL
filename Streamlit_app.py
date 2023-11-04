@@ -1,7 +1,7 @@
 import optuna
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from datetime import datetime
+import datetime
 import streamlit as st
 
 # %matplotlib inline
@@ -22,18 +22,18 @@ warnings.filterwarnings('ignore')
 
 ## %% Data download
 
-if datetime.now().month >= 10:
-    End_date = str(datetime.now().year) + '-' + str(datetime.now().month) + '-' + str(datetime.now().day)
-else:
-    End_date = str(datetime.now().year) + '-0' + str(datetime.now().month) + '-' + str(datetime.now().day)
+# if datetime.datetime.now().month >= 10:
+#     End_date = str(datetime.datetime.now().year) + '-' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
+# else:
+#     End_date = str(datetime.datetime.now().year) + '-0' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
 
 Ticker_list = list(config_tickers.DOW_30_TICKER)
 
-TRAIN_START = st.sidebar.date_input("TRAIN_START", "2005-01-01")
-TRAIN_END = st.sidebar.date_input("TRAIN_END", "2020-12-31")
-TRADE_START = st.sidebar.date_input("TRADE_START", "2021-01-01")
-TRADE_END = st.sidebar.date_input("TRADE_END", End_date)
-load_data = st.checkbox("LOAD DATA")
+TRAIN_START = str(st.sidebar.date_input("TRAIN_START", datetime.date(2005,01,01)))
+TRAIN_END = str(st.sidebar.date_input("TRAIN_END", datetime.date(2020,12,31)))
+TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,01,01)))
+TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,01,01)))
+load_data = str(st.checkbox("LOAD DATA"))
 
 
 @st.cache_data

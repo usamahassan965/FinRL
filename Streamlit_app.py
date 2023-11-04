@@ -180,7 +180,8 @@ def plot_data(df_unique, Use_ticker):
 
 if df_unique is not None and Plot_data:
     fig = plot_data(df_unique, Use_ticker)
-    st.plotly_chart(fig)
+    fig.show()
+    #st.plotly_chart(fig)
 else:
     pass
 

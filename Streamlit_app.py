@@ -87,7 +87,7 @@ if load_data and all([TRAIN_START, TRAIN_END, TRADE_START, TRADE_END]):
 
 # Create subplots with 2 rows; top for candlestick price, and bottom for bar volume
 Use_ticker = st.selectbox("Select Ticker", Ticker_list)
-Plot_data = st.button("PLOT DATA")
+#Plot_data = st.button("PLOT DATA")
 
 
 @st.cache_data
@@ -104,14 +104,14 @@ if load_data is True and Use_ticker is not None:
     df_unique = choose_ticker(load_data, Use_ticker, df_process)
 
 
-if st.button('PLOT DATA') and load_data is True and Use_ticker is not None:
+if load_data is True and Use_ticker is not None:
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=(Use_ticker, 'Volume'),
                         vertical_spacing=0.1,
                         row_width=[0.2, 0.7])
 
     # ----------------
     # Candlestick Plot
-    fig = fig.add_trace(go.Candlestick(x=df_unique['date'],
+    fig.add_trace(go.Candlestick(x=df_unique['date'],
                                  open=df_unique['open'],
                                  high=df_unique['high'],
                                  low=df_unique['low'],
@@ -120,34 +120,34 @@ if st.button('PLOT DATA') and load_data is True and Use_ticker is not None:
                   row=1, col=1)
 
     # Moving Average
-    fig = fig.add_trace(go.Scatter(x=df_unique['date'],
+    fig.add_trace(go.Scatter(x=df_unique['date'],
                              y=df_unique['close_30_sma'],
                              line_color='black',
                              name='sma'),
                   row=1, col=1)
 
     # RSI
-    fig = fig.add_trace(go.Scatter(x=df_unique['date'],
+    fig.add_trace(go.Scatter(x=df_unique['date'],
                              y=df_unique['rsi_30'],
                              line_color='green',
                              name='rsi'),
                   row=1, col=1)
 
     # MACD
-    fig = fig.add_trace(go.Scatter(x=df_unique['date'],
+    fig.add_trace(go.Scatter(x=df_unique['date'],
                              y=df_unique['macd'],
                              line_color='blue',
                              name='macd'),
                   row=1, col=1)
     # Vix
-    fig = fig.add_trace(go.Scatter(x=df_unique['date'],
+    fig.add_trace(go.Scatter(x=df_unique['date'],
                              y=df_unique['vix'],
                              line_color='red',
                              name='vix'),
                   row=1, col=1)
 
     # Upper Bound
-    fig = fig.add_trace(go.Scatter(x=df_unique['date'],
+    fig.add_trace(go.Scatter(x=df_unique['date'],
                              y=df_unique['boll_ub'],
                              line_color='gray',
                              name='upper band',
@@ -155,7 +155,7 @@ if st.button('PLOT DATA') and load_data is True and Use_ticker is not None:
                   row=1, col=1)
 
     # Lower Bound fill in between with parameter 'fill': 'tonexty'
-    fig = fig.add_trace(go.Scatter(x=df_unique['date'],
+    fig.add_trace(go.Scatter(x=df_unique['date'],
                              y=df_unique['boll_lb'],
                              line_color='gray',
                              fill='tonextx',
@@ -165,13 +165,13 @@ if st.button('PLOT DATA') and load_data is True and Use_ticker is not None:
 
     # ----------------
     # Volume Plot
-    fig = fig.add_trace(go.Bar(x=df_unique['date'], y=df_unique['volume'], showlegend=True),
+    fig.add_trace(go.Bar(x=df_unique['date'], y=df_unique['volume'], showlegend=True),
                   row=2, col=1)
 
     # Remove range slider; (short time frame)
-    fig = fig.update(layout_xaxis_rangeslider_visible=False)
+    fig.update(layout_xaxis_rangeslider_visible=False)
 
-    fig = fig.update_layout(height=900, width=1100)
+    fig.update_layout(height=900, width=1100)
 
     #fig.show()
     st.plotly_chart(fig,use_container_width=True)

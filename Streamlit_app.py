@@ -29,20 +29,19 @@ warnings.filterwarnings('ignore')
 
 Ticker_list = list(config_tickers.DOW_30_TICKER)
 
-TRAIN_START = str(st.sidebar.date_input("TRAIN_START", datetime.date(2005,1,1)))
-TRAIN_END = str(st.sidebar.date_input("TRAIN_END", datetime.date(2020,1,1)))
+TRAIN_START = '2005-01-01'
+TRAIN_END = '2020-12-31'
 TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,1,1)))
 TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,1,1)))
+st.success('Now you can load data!')
 load_data = st.checkbox("LOAD DATA")
 
 
-@st.cache_data
+@st.cache_data(max_entries=1,show_spinner='Downloading stocks data ...')
 def download_data(TRAIN_START_DATE: str, TRADE_END_DATE: str, Tickers: list):
     df = YahooDownloader(start_date=TRAIN_START_DATE,
-                         end_date=TRADE_END_DATE,
-                         ticker_list=Ticker_list).fetch_data()
-
-    print('\nData loaded!')
+                             end_date=TRADE_END_DATE,
+                             ticker_list=Ticker_list).fetch_data()
 
     return df
 
@@ -50,7 +49,7 @@ def download_data(TRAIN_START_DATE: str, TRADE_END_DATE: str, Tickers: list):
 ###################################################################################################################################################
 
 ## %% Preporcessing
-@st.cache_data
+@st.cache_data(max_entries=1,show_spinner='Pre-processing data ...')
 def preprocess_data(df):
     fe = FeatureEngineer(use_technical_indicator=True,
                          tech_indicator_list=INDICATORS,
@@ -86,6 +85,7 @@ if load_data and all([TRAIN_START, TRAIN_END, TRADE_START, TRADE_END]):
 #################################################################################################################################################
 
 # Create subplots with 2 rows; top for candlestick price, and bottom for bar volume
+st.success('Select the ticker before plotting!')
 Use_ticker = st.sidebar.selectbox("Select Ticker", Ticker_list)
 Plot_data = st.button("PLOT DATA")
 
@@ -228,16 +228,18 @@ if df_unique is not None:
     agent = DRLAgent(env = env_train)
 
 # Add a dropdown for selecting the action (Train agents, Fine Tune agents)
+st.success('Choose between Training and Fine Tuning ...')
 action = st.sidebar.selectbox("Select Action", ["Train Agent", "FineTune Agent"])
 selected_agent = None
 
 
 if action == "Train Agent" or 'FineTune Agent':
     # Add a dropdown for selecting the agent
+    st.success(' Select the agent or keep A2C ...')
     selected_agent = st.sidebar.selectbox("Select Agent", ["A2C", "DDPG", "PPO", "TD3", "SAC"])
 
 
-@st.cache_resource
+@st.cache_resource(max_entries=1,show_spinner="Training has started... Please wait!")
 def train_agent(df_unique, selected_agent, timesteps):
     # tmp_path = RESULTS_DIR + f'/{model_name}'
     env_train, e_trade_gym = dataset_splitting(df_unique, TRAIN_START, TRAIN_END, TRADE_START, TRADE_END)
@@ -250,7 +252,6 @@ def train_agent(df_unique, selected_agent, timesteps):
 
     # trained_agent = None
 
-    with st.spinner("Training has started... Please wait!"):
         trained_agent = agent.train_model(model=model,
                                           tb_log_name=selected_agent.lower(),
                                           total_timesteps=timesteps)
@@ -349,7 +350,7 @@ def objective(_trial: optuna.Trial, algorithm: str):
 
     return sharpe
 
-@st.cache_data
+@st.cache_data(max_entries=1,show_spinner="Fine Tuning has started... Please wait!")
 def run_optimization(algorithm: str, study_name: str, n_trials: int):
     sampler = optuna.samplers.TPESampler(seed=42)
     study = optuna.create_study(study_name=study_name, direction='maximize', sampler=sampler, pruner=optuna.pruners.HyperbandPruner())
@@ -385,8 +386,7 @@ elif st.button('FineTune Agent') and action == 'FineTune Agent':
     model = None
     num_trials = 20
     study_name = f"{selected_agent.lower()}_study"
-    with st.spinner("Fine Tuning has started... Please wait!"):
-        study = run_optimization(selected_agent.lower(), study_name, 20)
+    study = run_optimization(selected_agent.lower(), study_name, 20)
 
 
     if study is not None:

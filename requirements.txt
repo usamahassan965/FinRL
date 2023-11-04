@@ -29,8 +29,8 @@ recommonmark
 scikit-learn>=0.21.0
 
 # packaging
-#setuptools>=41.4.0
-setuptools>=65.5.0
+#setuptools>=4
+setuptools
 
 
 # to build docs using sphinx

@@ -104,7 +104,6 @@ if load_data is True and Use_ticker is not None:
     df_unique = choose_ticker(load_data, Use_ticker, df_process)
 
 
-@st.cache_data
 def plot_data(df_unique, Use_ticker):
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=(Use_ticker, 'Volume'),
                         vertical_spacing=0.1,

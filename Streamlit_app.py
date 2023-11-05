@@ -26,7 +26,7 @@ import pandas as pd
 warnings.filterwarnings('ignore')
 
 ##############################################################################################################################################
-
+st.title('Financial Stock Analysis')
 ## %% Data download
 
 # if datetime.datetime.now().month >= 10:

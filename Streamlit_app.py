@@ -85,8 +85,6 @@ if load_data and all([TRAIN_START, TRAIN_END, TRADE_START, TRADE_END]):
 #################################################################################################################################################
 
 # Create subplots with 2 rows; top for candlestick price, and bottom for bar volume
-if load_data:
-    st.sidebar.success('Select the ticker before plotting!')
 Use_ticker = st.sidebar.selectbox("Select Ticker", Ticker_list)
 Plot_data = st.button("PLOT DATA")
 
@@ -230,14 +228,13 @@ if df_unique is not None:
 
 # Add a dropdown for selecting the action (Train agents, Fine Tune agents)
 if env_train is not None:
-    st.sidebar.success('Choose between Training and Fine Tuning ...')
+    st.sidebar.success('Choose between Training and Fine Tuning !')
 action = st.sidebar.selectbox("Select Action", ["Train Agent", "FineTune Agent"])
 selected_agent = None
 
 
 if action == "Train Agent" or 'FineTune Agent':
     # Add a dropdown for selecting the agent
-    st.sidebar.success(' Select the agent or keep A2C ...')
     selected_agent = st.sidebar.selectbox("Select Agent", ["A2C", "DDPG", "PPO", "TD3", "SAC"])
 
 
@@ -467,9 +464,9 @@ elif st.button('FineTune Agent') and action == 'FineTune Agent':
     others_params = ['buffer_size','learning_rate','batch_size']
 
     model = None
-    num_trials = 20
+    num_trials = 10
     study_name = f"{selected_agent.lower()}_study"
-    study = run_optimization(selected_agent.lower(), study_name, 20)
+    study = run_optimization(selected_agent.lower(), study_name, 10)
 
 
     if study is not None:

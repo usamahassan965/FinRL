@@ -33,7 +33,7 @@ TRAIN_START = '2005-01-01'
 TRAIN_END = '2020-12-31'
 TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,1,1)))
 TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,1,1)))
-st.write('Please load data!')
+st.success('Please load data!')
 load_data = st.checkbox("LOAD DATA")
 
 
@@ -86,7 +86,7 @@ if load_data and all([TRAIN_START, TRAIN_END, TRADE_START, TRADE_END]):
 
 # Create subplots with 2 rows; top for candlestick price, and bottom for bar volume
 if load_data:
-    st.success('Select the ticker before plotting!')
+    st.sidebar.success('Select the ticker before plotting!')
 Use_ticker = st.sidebar.selectbox("Select Ticker", Ticker_list)
 Plot_data = st.button("PLOT DATA")
 
@@ -124,7 +124,7 @@ def plot_data(df_unique, Use_ticker):
     # Moving Average
     fig.add_trace(go.Scatter(x=df_unique['date'],
                              y=df_unique['close_30_sma'],
-                             line_color='black',
+                             line_color='violet',
                              name='sma'),
                   row=1, col=1)
 
@@ -173,7 +173,7 @@ def plot_data(df_unique, Use_ticker):
     # Remove range slider; (short time frame)
     fig.update(layout_xaxis_rangeslider_visible=False)
 
-    fig.update_layout(height=600, width=1000)
+    fig.update_layout(height=600, width=900)
 
     #fig.show()
     return fig
@@ -230,14 +230,14 @@ if df_unique is not None:
 
 # Add a dropdown for selecting the action (Train agents, Fine Tune agents)
 if env_train is not None:
-    st.success('Choose between Training and Fine Tuning ...')
+    st.sidebar.success('Choose between Training and Fine Tuning ...')
 action = st.sidebar.selectbox("Select Action", ["Train Agent", "FineTune Agent"])
 selected_agent = None
 
 
 if action == "Train Agent" or 'FineTune Agent':
     # Add a dropdown for selecting the agent
-    st.write(' Select the agent or keep A2C ...')
+    st.sidebar.success(' Select the agent or keep A2C ...')
     selected_agent = st.sidebar.selectbox("Select Agent", ["A2C", "DDPG", "PPO", "TD3", "SAC"])
 
 
@@ -425,7 +425,7 @@ def plot_returns(test_returns, baseline_returns):
         xaxis_title="Date",
         yaxis_title="Cumulative Returns",
         yaxis2=dict(title="Monthly Returns", overlaying="y", side="right"),
-        width=1000,  # Adjust the width as needed
+        width=900,  # Adjust the width as needed
         height=600    # Adjust the height as needed
     )
 

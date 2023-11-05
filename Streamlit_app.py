@@ -252,7 +252,7 @@ def train_agent(df_unique, selected_agent, timesteps):
 
     # trained_agent = None
 
-        trained_agent = agent.train_model(model=model,
+    trained_agent = agent.train_model(model=model,
                                           tb_log_name=selected_agent.lower(),
                                           total_timesteps=timesteps)
 

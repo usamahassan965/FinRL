@@ -192,3 +192,9 @@ wrds==3.1.6
 yarl==1.9.2
 yfinance==0.2.31
 zipp==3.17.0
+huggingface-hub==0.17.3
+transformers==4.35.0
+finnhub-python==2.4.19
+torch==2.1.0
+tqdm==4.66.1
+lxml==4.9.3

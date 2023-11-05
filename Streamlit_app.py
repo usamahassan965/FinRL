@@ -365,6 +365,69 @@ def run_optimization(algorithm: str, study_name: str, n_trials: int):
 
     return study
 
+@st.cache_data(max_entries=1)
+def get_baseline(start, end,ticker):
+    df_dji = YahooDownloader(
+        start_date=start, end_date=end, ticker_list=[ticker]).fetch_data()
+    dji1 = df_dji[["date", "close"]]
+    fst_day = dji1["close"][0]
+    dji = pd.merge(
+        dji1["date"],
+        dji1["close"].div(fst_day).mul(1000000),
+        how="outer",
+        left_index=True,
+        right_index=True,
+    ).set_index("date")
+    return df_dji,dji
+
+
+@st.cache_data(max_entries=1)
+def get_daily_return(df, value_col_name="account_value"):
+    df["daily_return"] = df[value_col_name].pct_change(1)
+    df["date"] = pd.to_datetime(df["date"])
+    df.set_index("date", inplace=True, drop=True)
+    df.index = df.index.tz_localize("UTC")
+    return pd.Series(df["daily_return"], index=df.index)
+
+
+@st.cache_data(max_entries=1)
+def plot_values(dji,account_val):
+    fig = go.Figure()
+
+    # Plot cumulative returns as line plots
+    fig.add_trace(go.Line(x=dji.index, y=dji, mode='lines', name='Actual Value'))
+    fig.add_trace(go.Line(x=account_val.index, y=account_val, mode='lines', name='Predicted Value'))
+
+    fig.update_layout(title='Actual Vs Predicted',xaxis_title='Date',yaxis_title='Close Returns',width=1100,height=500)
+
+    st.plotly_chart(fig)
+@st.cache_data(max_entries=1)
+def plot_returns(test_returns, baseline_returns):
+    # Create subplots
+    fig = go.Figure()
+
+    # Plot cumulative returns as line plots
+    fig.add_trace(go.Line(x=test_returns.index, y=test_returns, mode='lines', name='Test Asset'))
+    fig.add_trace(go.Line(x=baseline_returns.index, y=baseline_returns, mode='lines', name='Baseline Asset'))
+
+    # Calculate monthly returns
+    test_monthly = test_returns.resample('M').apply(lambda x: (1 + x).prod() - 1)
+    baseline_monthly = baseline_returns.resample('M').apply(lambda x: (1 + x).prod() - 1)
+
+    # Create subplots
+    fig.add_trace(go.Bar(x=test_monthly.index, y=test_monthly, name='Test Asset (Monthly)', yaxis="y2"))
+    fig.add_trace(go.Bar(x=baseline_monthly.index, y=baseline_monthly, name='Baseline Asset (Monthly)', yaxis="y2"))
+
+    fig.update_layout(
+        title="Returns Analysis",
+        xaxis_title="Date",
+        yaxis_title="Cumulative Returns",
+        yaxis2=dict(title="Monthly Returns", overlaying="y", side="right"),
+        width=1000,  # Adjust the width as needed
+        height=600    # Adjust the height as needed
+    )
+
+    st.plotly_chart(fig)
 
 timesteps = None
 trained_agent = None
@@ -375,7 +438,25 @@ df_account = None
 if st.button("Train Agent") and action == 'Train Agent':
     trained_agent = train_agent(df_unique, selected_agent.lower(), timesteps)
     df_account, _ = DRLAgent.DRL_prediction(model=trained_agent, environment=e_trade_gym)
-    print(df_account)
+
+    test_returns = get_daily_return(df_account, value_col_name='account_value')
+    test_returns = pd.DataFrame(test_returns)
+    test_returns['date'] = test_returns.index
+    test_returns = test_returns.reset_index(drop=True)
+    test_returns.index = pd.to_datetime(test_returns['date'])
+
+    baseline_df,baseline_account = get_baseline(TRADE_START, TRADE_END,ticker=Use_ticker)
+    print(baseline_df)
+    baseline_df = baseline_df.fillna(method="ffill").fillna(method="bfill")
+    baseline_returns = get_daily_return(baseline_df, value_col_name="close")
+
+    # Plot cumulative and monthly returns
+    plot_values(baseline_account['close'],df_account['account_value'].fillna(method='ffill'))
+    st.dataframe(baseline_df.head(5), use_container_width=True)
+    st.dataframe(df_account.head(5), use_container_width=True)
+    plot_returns(df_account['daily_return'],baseline_df['daily_return'])
+
+
 
 elif st.button('FineTune Agent') and action == 'FineTune Agent':
 
@@ -408,7 +489,22 @@ elif st.button('FineTune Agent') and action == 'FineTune Agent':
                                             tb_log_name=selected_agent.lower(),
                                             total_timesteps=timesteps)
         df_account, _ = DRLAgent.DRL_prediction(model=tuned_agent, environment=e_trade_gym)
-        print(df_account)
+
+        test_returns = get_daily_return(df_account, value_col_name='account_value')
+        test_returns = pd.DataFrame(test_returns)
+        test_returns['date'] = test_returns.index
+        test_returns = test_returns.reset_index(drop=True)
+        test_returns.index = pd.to_datetime(test_returns['date'])
+
+        baseline_df,baseline_account = get_baseline(TRADE_START, TRADE_END,ticker=Use_ticker)
+        baseline_df = baseline_df.fillna(method="ffill").fillna(method="bfill")
+        baseline_returns = get_daily_return(baseline_df, value_col_name="close")
+
+        # Plot cumulative and monthly returns
+        plot_values(baseline_account['close'],df_account['account_value'].fillna(method='ffill'))
+        st.dataframe(baseline_df.head(5), use_container_width=True)
+        st.dataframe(df_account.head(5), use_container_width=True)
+        plot_returns(df_account['daily_return'],baseline_df['daily_return'])
 if st.button('Clear All'):
     st.cache_data.clear()
     st.cache_resource.clear()

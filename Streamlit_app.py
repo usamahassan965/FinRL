@@ -511,7 +511,6 @@ elif st.button('FineTune Agent') and action == 'FineTune Agent':
         st.dataframe(baseline_df.head(5), use_container_width=True)
         st.dataframe(df_account.head(5), use_container_width=True)
         plot_returns(df_account['daily_return'],baseline_df['daily_return'])
-if st.button('Clear All'):
     
 
 st.title("Stock News Analysis")

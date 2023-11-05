@@ -592,7 +592,7 @@ if load_news:
 if load_news and news is None:
     news = '\n'.join(News_list)
 # Step 3: Create a button to perform sentiment analysis and summarization
-if st.button("Stocks Analysis") and news is not None:
+if load_news and news is not None:
     sentiments = []
     probabilities = []
     summaries = []

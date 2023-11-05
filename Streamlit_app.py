@@ -517,7 +517,7 @@ st.title("Stock News Analysis")
 
 News_Analysis = st.checkbox('Stock News')
 
-if News_Analyis: 
+if News_Analysis: 
     st.cache_data.clear()
     st.cache_resource.clear()
     model_sent = "ProsusAI/finbert"
@@ -631,7 +631,9 @@ if News_Analyis:
         if st.button("Clear All"):
             st.cache_data.clear()
             st.cache_resource.clear()
-
+    
+    else:
+        pass
         
     
 

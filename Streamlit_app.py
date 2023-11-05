@@ -10,6 +10,13 @@ from finrl.meta.preprocessor.preprocessors import FeatureEngineer, data_split
 from finrl.meta.env_stock_trading.env_stocktrading import StockTradingEnv
 from finrl.agents.stablebaselines3.models import DRLAgent
 
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModelForSeq2SeqLM
+from FinGPT.finnhub_date_range import Finnhub_Date_Range
+from tqdm import tqdm
+from transformers import pipeline
+from statistics import mode, mean
+import torch.nn.functional as F
+
 from finrl import config_tickers
 from finrl.config import INDICATORS
 import warnings
@@ -505,29 +512,129 @@ elif st.button('FineTune Agent') and action == 'FineTune Agent':
         st.dataframe(df_account.head(5), use_container_width=True)
         plot_returns(df_account['daily_return'],baseline_df['daily_return'])
 if st.button('Clear All'):
+    
+
+st.title("Stock News Analysis")
+
+News_Analysis = st.checkbox('Stock News')
+
+if News_Analyis: 
     st.cache_data.clear()
     st.cache_resource.clear()
+    model_sent = "ProsusAI/finbert"
+    model_sum = "Falconsai/text_summarization"
+    tokens = 2048
 
 
-# df_account = df_account
-# df1 = deepcopy(df_account)
-# print(df1)
-# if df_account is not None:
-#     test_returns = get_daily_return(df1, value_col_name='account_value')
-#     test_returns = pd.DataFrame(test_returns)
-#     test_returns['date'] = test_returns.index
-#     test_returns = test_returns.reset_index(drop=True)
-#     test_returns.index = pd.to_datetime(test_returns['date'])
-#     test_returns['Close'] = test_returns['daily_return']
-#     test_returns.drop('daily_return', axis=1, inplace=True)
-#     test_returns.index = test_returns.index.tz_convert('utc')
-#     test_returns.drop('date', axis=1, inplace=True)
-#     ret1 = pd.Series(test_returns['Close'], dtype='float32')
-#     print(ret1)
-#     tearsheet = pf.create_returns_tear_sheet(ret1, live_start_date='2021-01-03')
-#
-#     st.markdown(tearsheet)
+    @st.cache_resource
+    def sentiment_model(model_name):
+        model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        return model, tokenizer
 
+    @st.cache_resource(max_entries=1,show_spinner='Loading Language Model...Please wait!')
+    def summary_model(model_name):
+        summarizer = pipeline("summarization", model=model_name)
+        return summarizer
+
+
+    @st.cache_data(max_entries=1)
+    def split_news(news, max_tokens):
+        news_items = news.split('\n')
+        split_news_list = []
+        current_item = ""
+
+        for item in tqdm(news_items):
+            if len(current_item) + len(item) <= max_tokens:
+                current_item += item + '\n'
+            else:
+                split_news_list.append(current_item.strip())  # Remove trailing newline
+                current_item = item + '\n'
+
+        # Add the last item
+        split_news_list.append(current_item.strip())
+
+        return split_news_list
+
+
+    # Step 1: Create text fields for start date and end date with default values
+    start_date = str(st.date_input("Start Date", datetime.date(2023,1,1)))
+    end_date = str(st.date_input("End Date", datetime.date(2023,1,8)))
+    News_list = []
+
+
+    @st.cache_data(max_entries=1,show_spinner='Downloading News ....Please wait!')
+    def download_news(start_date, end_date):
+        config = {
+            "use_proxy": "us_free",
+            "max_retry": 5,
+            "proxy_pages": 5,
+            "token": "ckc09r1r01qjeja48ougckc09r1r01qjeja48ov0"
+        }
+        stock = Use_ticker
+        news_downloader = Finnhub_Date_Range(config)
+        news_downloader.download_date_range_stock(str(start_date), str(end_date), stock=stock)
+        news_downloader.gather_content()
+        df = news_downloader.dataframe
+        df["date"] = df.datetime.dt.date
+        df["date"] = df["date"].astype("str")
+        df = df.sort_values("datetime")
+        news_list = list(df['headline'])
+
+        st.success(f"Downloaded {len(news_list)} news articles.")
+        return news_list
+
+
+    news = None
+    split_news_list = None
+    load_news = st.checkbox("Load News")
+    # Step 2: Create a button to download news
+    if load_news:
+        News_list.extend(download_news(start_date, end_date))
+
+    if load_news and news is None:
+        news = '\n'.join(News_list)
+    # Step 3: Create a button to perform sentiment analysis and summarization
+    if st.button("Stocks Analysis") and news is not None:
+        sentiments = []
+        probabilities = []
+        summaries = []
+        split_news_list = split_news(news,max_tokens=tokens)
+        model, tokenizer = sentiment_model(model_sent)
+        summarizer = summary_model(model_name=model_sum)
+
+        for i, news_item in enumerate(split_news_list):
+            inputs = tokenizer(news_item, return_tensors="pt")
+            outputs = model(**inputs)
+
+            probs = F.softmax(outputs.logits, dim=-1)
+            sentiment = model.config.id2label[probs.argmax().item()]
+            probability = probs.max().item()
+            sentiments.append(sentiment)
+            probabilities.append(probability)
+        
+            summary = summarizer(news_item,max_length=200,min_length=30,do_sample=False)[0]["summary_text"]
+            if summary[-1] == '.':
+                pass
+            else:
+                summary += '.'
+            summary += "\n"
+
+            summaries.append(summary)
+        sentimode = mode(sentiments)
+        probmean = mean(probabilities)
+        result_summary = "\n".join(summaries)
+        st.subheader("Headlines")
+        st.success(result_summary)
+        st.subheader("Sentiment Analysis")
+        st.success(f'Sentiment: {sentimode.upper()}')
+        st.success(f'Score: {probmean:.2f}')
+        if st.button("Clear All"):
+            st.cache_data.clear()
+            st.cache_resource.clear()
+
+        
+    
 
 #################################################################################################################################################
 

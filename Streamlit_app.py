@@ -33,7 +33,7 @@ TRAIN_START = '2005-01-01'
 TRAIN_END = '2020-12-31'
 TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,1,1)))
 TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,1,1)))
-st.success('Now you can load data!')
+st.write('Please load data!')
 load_data = st.checkbox("LOAD DATA")
 
 
@@ -85,7 +85,8 @@ if load_data and all([TRAIN_START, TRAIN_END, TRADE_START, TRADE_END]):
 #################################################################################################################################################
 
 # Create subplots with 2 rows; top for candlestick price, and bottom for bar volume
-st.success('Select the ticker before plotting!')
+if load_data:
+    st.success('Select the ticker before plotting!')
 Use_ticker = st.sidebar.selectbox("Select Ticker", Ticker_list)
 Plot_data = st.button("PLOT DATA")
 
@@ -172,7 +173,7 @@ def plot_data(df_unique, Use_ticker):
     # Remove range slider; (short time frame)
     fig.update(layout_xaxis_rangeslider_visible=False)
 
-    #fig.update_layout(height=900, width=1200)
+    fig.update_layout(height=600, width=1000)
 
     #fig.show()
     return fig
@@ -180,7 +181,7 @@ def plot_data(df_unique, Use_ticker):
 
 if df_unique is not None and Plot_data:
     fig = plot_data(df_unique, Use_ticker)
-    st.plotly_chart(fig,theme=None,use_container_width=True)
+    st.plotly_chart(fig)
 else:
     pass
 
@@ -228,14 +229,15 @@ if df_unique is not None:
     agent = DRLAgent(env = env_train)
 
 # Add a dropdown for selecting the action (Train agents, Fine Tune agents)
-st.success('Choose between Training and Fine Tuning ...')
+if env_train is not None:
+    st.success('Choose between Training and Fine Tuning ...')
 action = st.sidebar.selectbox("Select Action", ["Train Agent", "FineTune Agent"])
 selected_agent = None
 
 
 if action == "Train Agent" or 'FineTune Agent':
     # Add a dropdown for selecting the agent
-    st.success(' Select the agent or keep A2C ...')
+    st.write(' Select the agent or keep A2C ...')
     selected_agent = st.sidebar.selectbox("Select Agent", ["A2C", "DDPG", "PPO", "TD3", "SAC"])
 
 

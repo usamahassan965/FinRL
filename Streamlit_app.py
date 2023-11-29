@@ -9,6 +9,7 @@ from finrl.meta.preprocessor.yahoodownloader import YahooDownloader
 from finrl.meta.preprocessor.preprocessors import FeatureEngineer, data_split
 from finrl.meta.env_stock_trading.env_stocktrading import StockTradingEnv
 from finrl.agents.stablebaselines3.models import DRLAgent
+from stable_baselines3 import DDPG,PPO,A2C,TD3,SAC
 
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModelForSeq2SeqLM
 from FinGPT.finnhub_date_range import Finnhub_Date_Range
@@ -29,15 +30,15 @@ warnings.filterwarnings('ignore')
 st.title('Financial Stock Analysis')
 ## %% Data download
 
-# if datetime.datetime.now().month >= 10:
-#     End_date = str(datetime.datetime.now().year) + '-' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
-# else:
-#     End_date = str(datetime.datetime.now().year) + '-0' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
+if datetime.datetime.now().month >= 10:
+    End_date = str(datetime.datetime.now().year) + '-' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
+else:
+    End_date = str(datetime.datetime.now().year) + '-0' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
 
 Ticker_list = list(config_tickers.DOW_30_TICKER)
 
 TRAIN_START = '2005-01-01'
-TRAIN_END = '2020-12-31'
+TRAIN_END = End_date
 TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,1,1)))
 TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,1,1)))
 st.success('Please load data!')
@@ -240,9 +241,11 @@ action = st.sidebar.selectbox("Select Action", ["Train Agent", "FineTune Agent"]
 selected_agent = None
 
 
-if action == "Train Agent" or 'FineTune Agent':
+if action == "Train Agent" :
     # Add a dropdown for selecting the agent
     selected_agent = st.sidebar.selectbox("Select Agent", ["A2C", "DDPG", "PPO", "TD3", "SAC"])
+elif action == 'FineTune Agent':
+    selected_agent = st.sidebar.selectbox("Select Agent", ["A2C", "DDPG", "PPO"])
 
 
 @st.cache_resource(max_entries=1,show_spinner="Training has started... Please wait!")
@@ -466,51 +469,60 @@ if st.button("Train Agent") and action == 'Train Agent':
 
 elif st.button('FineTune Agent') and action == 'FineTune Agent':
 
-    a2c_params = ['learning_rate','normalize_advantage']
-    ppo_params = ['learning_rate','batch_size']
-    others_params = ['buffer_size','learning_rate','batch_size']
+    # a2c_params = ['learning_rate','normalize_advantage']
+    # ppo_params = ['learning_rate','batch_size']
+    # others_params = ['buffer_size','learning_rate','batch_size']
 
-    model = None
-    num_trials = 10
-    study_name = f"{selected_agent.lower()}_study"
-    study = run_optimization(selected_agent.lower(), study_name, 10)
+    # model = None
+    # num_trials = 10
+    # study_name = f"{selected_agent.lower()}_study"
+    # study = run_optimization(selected_agent.lower(), study_name, 10)
 
 
-    if study is not None:
-        agent = DRLAgent(env=env_train)
-        if selected_agent == 'A2C':
-            model = agent.get_model('a2c', model_kwargs={a2c_params[0]: study.best_params['learning_rate'],
-                                                         a2c_params[1]: study.best_params['normalize_advantage']})
-        elif selected_agent == 'PPO':
-            model = agent.get_model('ppo', model_kwargs={ppo_params[0]: study.best_params['learning_rate'],
-                                                         ppo_params[1]: study.best_params['batch_size']})
-        else:
-            model = agent.get_model(selected_agent.lower(),
-                                    model_kwargs={others_params[1]: study.best_params['learning_rate'],
-                                                  others_params[0]: study.best_params['buffer_size'],
-                                                  others_params[2]: study.best_params['batch_size']})
+    # if study is not None:
+    #     agent = DRLAgent(env=env_train)
+    #     if selected_agent == 'A2C':
+    #         model = agent.get_model('a2c', model_kwargs={a2c_params[0]: study.best_params['learning_rate'],
+    #                                                      a2c_params[1]: study.best_params['normalize_advantage']})
+    #     elif selected_agent == 'PPO':
+    #         model = agent.get_model('ppo', model_kwargs={ppo_params[0]: study.best_params['learning_rate'],
+    #                                                      ppo_params[1]: study.best_params['batch_size']})
+    #     else:
+    #         model = agent.get_model(selected_agent.lower(),
+    #                                 model_kwargs={others_params[1]: study.best_params['learning_rate'],
+    #                                               others_params[0]: study.best_params['buffer_size'],
+    #                                               others_params[2]: study.best_params['batch_size']})
 
-        with st.spinner("Training has started (with tuned parameters)... Please wait!"):
-            tuned_agent = agent.train_model(model=model,
-                                            tb_log_name=selected_agent.lower(),
-                                            total_timesteps=timesteps)
-        df_account, _ = DRLAgent.DRL_prediction(model=tuned_agent, environment=e_trade_gym)
+        # with st.spinner("Training has started (with tuned parameters)... Please wait!"):
+        #     tuned_agent = agent.train_model(model=model,
+        #                                     tb_log_name=selected_agent.lower(),
+        #                                     total_timesteps=timesteps)
+    
+    model_path = 'models/{0}.pth'.format(selected_agent)
+    if selected_agent == 'A2C':
+        tuned_agent = A2C.load(model_path, env=env_train)
+    elif selected_agent == 'DDPG':
+        tuned_agent = DDPG.load(model_path, env=env_train)
+    elif selected_agent == 'PPO:
+        tuned_agent = PPO.load(model_path, env=env_train)
 
-        test_returns = get_daily_return(df_account, value_col_name='account_value')
-        test_returns = pd.DataFrame(test_returns)
-        test_returns['date'] = test_returns.index
-        test_returns = test_returns.reset_index(drop=True)
-        test_returns.index = pd.to_datetime(test_returns['date'])
+    df_account, _ = DRLAgent.DRL_prediction(model=tuned_agent, environment=e_trade_gym)
 
-        baseline_df,baseline_account = get_baseline(TRADE_START, TRADE_END,ticker=Use_ticker)
-        baseline_df = baseline_df.fillna(method="ffill").fillna(method="bfill")
-        baseline_returns = get_daily_return(baseline_df, value_col_name="close")
+    test_returns = get_daily_return(df_account, value_col_name='account_value')
+    test_returns = pd.DataFrame(test_returns)
+    test_returns['date'] = test_returns.index
+    test_returns = test_returns.reset_index(drop=True)
+    test_returns.index = pd.to_datetime(test_returns['date'])
 
-        # Plot cumulative and monthly returns
-        plot_values(baseline_account['close'],df_account['account_value'].fillna(method='ffill'))
-        st.dataframe(baseline_df.head(5), use_container_width=True)
-        st.dataframe(df_account.head(5), use_container_width=True)
-        plot_returns(df_account['daily_return'],baseline_df['daily_return'])
+    baseline_df,baseline_account = get_baseline(TRADE_START, TRADE_END,ticker=Use_ticker)
+    baseline_df = baseline_df.fillna(method="ffill").fillna(method="bfill")
+    baseline_returns = get_daily_return(baseline_df, value_col_name="close")
+
+    # Plot cumulative and monthly returns
+    plot_values(baseline_account['close'],df_account['account_value'].fillna(method='ffill'))
+    st.dataframe(baseline_df.head(5), use_container_width=True)
+    st.dataframe(df_account.head(5), use_container_width=True)
+    plot_returns(df_account['daily_return'],baseline_df['daily_return'])
     
 
 st.title("Stock News Analysis")

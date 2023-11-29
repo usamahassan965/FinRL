@@ -503,7 +503,7 @@ elif st.button('FineTune Agent') and action == 'FineTune Agent':
         tuned_agent = A2C.load(model_path, env=env_train)
     elif selected_agent == 'DDPG':
         tuned_agent = DDPG.load(model_path, env=env_train)
-    elif selected_agent == 'PPO:
+    elif selected_agent == 'PPO':
         tuned_agent = PPO.load(model_path, env=env_train)
 
     df_account, _ = DRLAgent.DRL_prediction(model=tuned_agent, environment=e_trade_gym)

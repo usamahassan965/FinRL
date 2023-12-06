@@ -525,7 +525,7 @@ elif st.button('FineTune Agent') and action == 'FineTune Agent':
     plot_returns(df_account['daily_return'],baseline_df['daily_return'])
     
 
-st.title("Stock News Analysis")
+st.title('🦙 Llama Banker')
 
 model_sent = "ProsusAI/finbert"
 model_sum = "Falconsai/text_summarization"
@@ -564,33 +564,81 @@ def split_news(news, max_tokens):
 
 
 # Step 1: Create text fields for start date and end date with default values
-st.success('Note: Loading News takes time...Choose dates wisely!')
-start_date = str(st.date_input("Start Date", datetime.date(2023,1,1)))
-end_date = str(st.date_input("End Date", datetime.date(2023,1,8)))
-News_list = []
+# st.success('Note: Loading News takes time...Choose dates wisely!')
+# start_date = str(st.date_input("Start Date", datetime.date(2023,1,1)))
+# end_date = str(st.date_input("End Date", datetime.date(2023,1,8)))
+# News_list = []
 
 
-@st.cache_data(max_entries=1,show_spinner='Downloading News ....Please wait!')
-def download_news(start_date, end_date):
-    config = {
-        "use_proxy": "us_free",
-        "max_retry": 5,
-        "proxy_pages": 5,
-        "token": "ckc09r1r01qjeja48ougckc09r1r01qjeja48ov0"
-    }
-    stock = Use_ticker
-    news_downloader = Finnhub_Date_Range(config)
-    news_downloader.download_date_range_stock(str(start_date), str(end_date), stock=stock)
-    news_downloader.gather_content()
-    df = news_downloader.dataframe
-    df["date"] = df.datetime.dt.date
-    df["date"] = df["date"].astype("str")
-    df = df.sort_values("datetime")
-    news_list = list(df['headline'])
+# @st.cache_data(max_entries=1,show_spinner='Downloading News ....Please wait!')
+# def download_news(start_date, end_date):
+#     config = {
+#         "use_proxy": "us_free",
+#         "max_retry": 5,
+#         "proxy_pages": 5,
+#         "token": "ckc09r1r01qjeja48ougckc09r1r01qjeja48ov0"
+#     }
+#     stock = Use_ticker
+#     news_downloader = Finnhub_Date_Range(config)
+#     news_downloader.download_date_range_stock(str(start_date), str(end_date), stock=stock)
+#     news_downloader.gather_content()
+#     df = news_downloader.dataframe
+#     df["date"] = df.datetime.dt.date
+#     df["date"] = df["date"].astype("str")
+#     df = df.sort_values("datetime")
+#     news_list = list(df['headline'])
 
-    st.success(f"Downloaded {len(news_list)} news articles.")
-    return news_list
+#     st.success(f"Downloaded {len(news_list)} news articles.")
+#     return news_list
 
+finviz_url = 'https://finviz.com/quote.ashx?t='
+def get_news(ticker):
+    url = finviz_url + ticker
+    req = Request(url=url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}) 
+    response = urlopen(req)    
+    # Read the contents of the file into 'html'
+    html = BeautifulSoup(response,features='lxml')
+    # Find 'news-table' in the Soup and load it into 'news_table'
+    news_table = html.find(id='news-table')
+    return news_table
+
+# parse news into dataframe
+def parse_news(news_table):
+    parsed_news = []
+    
+    for x in news_table.findAll('tr'):
+        # read the text from each tr tag into text
+        # get text from a only
+        text = x.a.get_text() if x.a else ''
+        # splite text in the td tag into a list 
+        date_scrape = x.td.text.split()
+        # if the length of 'date_scrape' is 1, load 'time' as the only element
+
+        if len(date_scrape) == 1:
+            time = date_scrape[0]
+            
+        # else load 'date' as the 1st element and 'time' as the second    
+        else:
+            date = date_scrape[0]
+            time = date_scrape[1]
+        
+        # Append ticker, date, time and headline as a list to the 'parsed_news' list
+        parsed_news.append([date, time, text])        
+        # Set column names
+        columns = ['date', 'time', 'headline']
+        # Convert the parsed_news list into a DataFrame called 'parsed_and_scored_news'
+        parsed_news_df = pd.DataFrame(parsed_news, columns=columns)        
+        # Create a pandas datetime object from the strings in 'date' and 'time' column
+        #parsed_news_df['datetime'] = pd.to_datetime(parsed_news_df['date'] + ' ' + parsed_news_df['time'])
+        
+    return parsed_news_df
+
+@st.cache_data
+def download_news(ticker):
+    news_table= get_news(ticker)
+    parsed_news_df = parse_news(news_table)
+    headlines = '. \n'.join(list(parsed_news_df['headline']))
+    return headlines
 
 news = None
 split_news_list = None
@@ -599,10 +647,8 @@ load_news = st.checkbox("Load News")
 if load_news:
     st.cache_data.clear()
     st.cache_resource.clear()
-    News_list.extend(download_news(start_date, end_date))
+    news= download_news(Use_ticker)
 
-if load_news and news is None:
-    news = '\n'.join(News_list)
 # Step 3: Create a button to perform sentiment analysis and summarization
 if load_news and news is not None:
     sentiments = []

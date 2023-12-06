@@ -32,7 +32,7 @@ warnings.filterwarnings('ignore')
 ##############################################################################################################################################
 st.title('Financial Stock Analysis')
 ## %% Data download
-
+st.empty()
 if datetime.datetime.now().month >= 10:
     End_date = str(datetime.datetime.now().year) + '-' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
 else:
@@ -45,7 +45,7 @@ TRAIN_END = End_date
 TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,1,1)))
 TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,1,1)))
 st.success('Please load data!')
-load_data = st.checkbox("LOAD DATA")
+load_data = st.sidebar.checkbox("LOAD DATA")
 
 
 @st.cache_data(max_entries=1,show_spinner='Downloading stocks data ...')
@@ -86,13 +86,94 @@ def preprocess_data(df):
 
 df_process = None
 
+@st.cache_data
+def calculate_super_trend(data, period=10, multiplier=3):
+    data['tr'] = 0.0
+    data['atr'] = 0.0
+    data['upper_basic'] = 0.0
+    data['lower_basic'] = 0.0
+    data['in_uptrend'] = False
+
+    for i in range(1, len(data)):
+        high_low = data.at[i, 'high'] - data.at[i, 'low']
+        high_close = abs(data.at[i, 'high'] - data.at[i - 1, 'close'])
+        low_close = abs(data.at[i, 'low'] - data.at[i - 1, 'close'])
+
+        true_range = max(high_low, high_close, low_close)
+        data.at[i, 'tr'] = true_range
+
+    data['atr'] = data['tr'].rolling(period).mean()
+
+    data['upper_basic'] = (data['high'] + data['low']) / 2 + multiplier * data['atr']
+    data['lower_basic'] = (data['high'] + data['low']) / 2 - multiplier * data['atr']
+
+    data.loc[data['close'] > data['upper_basic'], 'in_uptrend'] = True
+    data.loc[data['close'] < data['lower_basic'], 'in_uptrend'] = False
+
+    data['super_trend'] = data['upper_basic']
+    data.loc[data['in_uptrend'] == False, 'super_trend'] = data['lower_basic']
+    data['super_trend'].fillna(0, inplace=True)
+    data.drop(['tr','atr','lower_basic','upper_basic','in_uptrend'],axis=1,inplace=True)
+
+    return data
+
+@st.cache_data
+def calculate_stochastic_oscillator(data, k_period=14, d_period=3):
+    data['lowest_low'] = data['low'].rolling(window=k_period).min()
+    data['highest_high'] = data['high'].rolling(window=k_period).max()
+
+    data['%K'] = ((data['close'] - data['lowest_low']) / (data['highest_high'] - data['lowest_low'])) * 100
+    data['%D'] = data['%K'].rolling(window=d_period).mean()
+    data.drop(['highest_high','lowest_low'],axis=1,inplace=True)
+    data['%K'].fillna(0,inplace=True)
+    data['%D'].fillna(0,inplace=True)
+
+    return data
+
+@st.cache_data
+def calculate_obv(data):
+    data['obv'] = (data['volume'] * (data['close'].diff() > 0) - data['volume'] * (data['close'].diff() < 0)).fillna(0).cumsum()
+    data['obv'].fillna(0,inplace=True)
+    return data
+
+@st.cache_data
+def calculate_accumulation_distribution(data):
+    data['ad_line'] = ((data['close'] - data['low']) - (data['high'] - data['close'])) / (data['high'] - data['low']) * data['volume']
+    data['ad_line'] = data['ad_line'].fillna(0).cumsum()
+    return data
+
+@st.cache_data
+def calculate_aroon_oscillator(data, period=14):
+    data['aroon_up'] = data['high'].rolling(period + 1).apply(lambda x: x.argmax(), raw=True) / period * 100
+    data['aroon_down'] = data['low'].rolling(period + 1).apply(lambda x: x.argmin(), raw=True) / period * 100
+
+    data['aroon_oscillator'] = data['aroon_up'] - data['aroon_down']
+    data.drop(['aroon_up','aroon_down'],axis=1,inplace=True)
+    data['aroon_oscillator'].fillna(0,inplace=True)
+    return data
+
 if load_data and all([TRAIN_START, TRAIN_END, TRADE_START, TRADE_END]):
     # Call the download_data and process_data functions here
     # Display first 5 samples of data in a DataFrame
     df = download_data(TRAIN_START_DATE=TRAIN_START, TRADE_END_DATE=TRADE_END, Tickers=Ticker_list)
     df_process = preprocess_data(df=df)
+    df_process['advance_decline'] = 0  # Default to 0
+    df_process.loc[df_process['close'] > df_process['close'].shift(1), 'advance_decline'] = 1  # If close price increases, mark as advance
+    df_process.loc[df_process['close'] < df_process['close'].shift(1), 'advance_decline'] = -1  # If close price decreases, mark as decline
+
+    # Calculate the cumulative sum to get a proxy A/D line
+    df_process['proxy_ad_line'] = df_process['advance_decline'].cumsum()
+    df_process.drop(['advance_decline'],axis=1,inplace=True)
+    df_process['proxy_ad_line'].fillna(0,inplace=True)
+    df_process = calculate_super_trend(df_process)
+    df_process = calculate_stochastic_oscillator(df_process)
+    df_process = calculate_obv(df_process)
+    df_process = calculate_accumulation_distribution(df_process)
+    df_process = calculate_aroon_oscillator(df_process)
+    df_process = df_process.ffill()
+
     Ticker_list = list(df_process['tic'].unique())
-    st.dataframe(df.head(5), use_container_width=True, hide_index=True)
+    st.dataframe(df_process.head(5), use_container_width=True, hide_index=True)
 #################################################################################################################################################
 
 # Create subplots with 2 rows; top for candlestick price, and bottom for bar volume
@@ -529,7 +610,7 @@ elif st.button('FineTune Agent') and action == 'FineTune Agent':
     
 
 st.title('🦙 Llama Banker')
-
+st.empty()
 model_sent = "ProsusAI/finbert"
 model_sum = "Falconsai/text_summarization"
 tokens = 2048

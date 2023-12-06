@@ -24,6 +24,9 @@ import warnings
 import itertools
 import pandas as pd
 
+from urllib.request import urlopen, Request
+from bs4 import BeautifulSoup
+import pandas as pd
 warnings.filterwarnings('ignore')
 
 ##############################################################################################################################################

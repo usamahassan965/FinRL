@@ -32,7 +32,7 @@ warnings.filterwarnings('ignore')
 ##############################################################################################################################################
 st.title('Financial Stock Analysis')
 ## %% Data download
-st.empty()
+
 if datetime.datetime.now().month >= 10:
     End_date = str(datetime.datetime.now().year) + '-' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
 else:
@@ -44,7 +44,6 @@ TRAIN_START = '2005-01-01'
 TRAIN_END = End_date
 TRADE_START = str(st.sidebar.date_input("TRADE_START", datetime.date(2021,1,1)))
 TRADE_END = str(st.sidebar.date_input("TRADE_END", datetime.date(2023,1,1)))
-st.success('Please load data!')
 load_data = st.sidebar.checkbox("LOAD DATA")
 
 
@@ -526,7 +525,7 @@ timesteps = None
 trained_agent = None
 if selected_agent is not None:
     # Add a scrollbar to select the timesteps
-    timesteps = st.slider("Select timestep", min_value=1000, max_value=100000, step=2000)
+    timesteps = st.sidebar.slider("Select timestep", min_value=1000, max_value=100000, step=2000)
 df_account = None
 if st.button("Train Agent") and action == 'Train Agent':
     trained_agent = train_agent(df_unique, selected_agent.lower(), timesteps)
